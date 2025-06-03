@@ -1,7 +1,7 @@
 "use client";
 
 import Select from "react-select";
-import React, { useState } from "react";
+import React from "react";
 import { conductiveMaterials } from "@/lib/materials/conductiveMaterials";
 
 const options = Object.entries(conductiveMaterials).map(([key, mat]) => ({
@@ -15,15 +15,14 @@ interface MaterialSelectorProps {
 }
 
 export default function MaterialSelector({
-  selectedKey,
   setSelectedKey,
 }: MaterialSelectorProps) {
-  const material = selectedKey ? conductiveMaterials[selectedKey] : null;
 
   return (
     <div className="flex flex-col items-start w-full gap-1">
       <h2 className="text-white text-lg">Selecione o Material:</h2>
       <Select
+        id="material-selector"
         required
         styles={{
           control: (base) => ({

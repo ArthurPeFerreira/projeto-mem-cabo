@@ -21,6 +21,7 @@ export default function CurrentTypeSelector({
     <div className="flex flex-col items-start w-full gap-1">
       <h2 className="text-white text-lg">Tipo de Corrente:</h2>
       <Select
+        id="current-type-selector"
         required
         styles={{
           control: (base) => ({

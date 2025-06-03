@@ -1,18 +1,27 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { useState } from "react";
 import Input from "./components/Input";
-import MaterialSelector from "./components/MaterialSelection";
 import { conductiveMaterials } from "@/lib/materials/conductiveMaterials";
 import { MaterialParameteters } from "./components/MaterialParameteters";
 import { MU_0 } from "@/lib/constants";
-import Select from "react-select";
-import CurrentTypeSelector from "./components/CurrentTypeSelection";
+import CalculedParameters from "./components/CalculedParameters";
 
-const currentOptions = [
-  { value: "AC", label: "Corrente Alternada (AC)" },
-  { value: "DC", label: "Corrente Contínua (DC)" },
-];
+const MaterialSelector = dynamic(
+  () => import("./components/MaterialSelection"),
+  {
+    ssr: false,
+  }
+);
+
+const CurrentTypeSelector = dynamic(
+  () => import("./components/CurrentTypeSelection"),
+  {
+    ssr: false,
+  }
+);
 
 export default function Home() {
   const [selectedMaterialKey, setSelectedMaterialKey] = useState<string | null>(
@@ -25,15 +34,19 @@ export default function Home() {
   const [numberOfWires, setNumberOfWires] = useState<number>(7);
   const [currentType, setCurrentType] = useState<"AC" | "DC">("AC");
 
+  const [skinEfect, setSkinEfect] = useState<number>();
+  const [resistivityNewTemperature, setResistivityNewTemperature] =
+    useState<number>();
+  const [Rcc, setRcc] = useState<number>();
+  const [Rca, setRca] = useState<number>();
+  const [currentTypeSelected, setCurrentTypeSelected] = useState<"AC" | "DC">();
+
   function handleSubmit() {
     if (!selectedMaterialKey) {
       return;
     }
 
     const conductorArea = Math.PI * conductorRadius * conductorRadius;
-
-    const absoluteTemperature =
-      conductiveMaterials[selectedMaterialKey].absoluteTemperature;
 
     const alpha = conductiveMaterials[selectedMaterialKey].alpha;
 
@@ -63,12 +76,22 @@ export default function Home() {
     }
 
     const Rca =
-      (resistanceNewTemperature * conductorLength * strandingFactor) /
+      (resistivityNewTemperature * conductorLength * strandingFactor) /
       (2 * Math.PI * conductorRadius * skinDepth * numberOfWires);
+
+    const Rcc =
+      (resistivityNewTemperature * conductorLength * strandingFactor) /
+      (conductorArea * numberOfWires);
+
+    setCurrentTypeSelected(currentType);
+    setSkinEfect(skinDepth);
+    setResistivityNewTemperature(resistivityNewTemperature);
+    setRcc(Rcc);
+    setRca(Rca);
   }
 
   return (
-    <main className="flex flex-row gap-3 p-4 justify-center">
+    <main className="flex flex-col sm:flex-row gap-3 p-4 justify-center items-center w-full ">
       <form
         className="bg-gray-800 w-fit h-fit p-2 rounded-md"
         onSubmit={(e) => {
@@ -95,7 +118,7 @@ export default function Home() {
               placeholder="Digite a Frequência..."
               setValue={setFrequency}
               value={frequency}
-              minimum={0}
+              minimum={1}
               maximum={1000}
               step="1"
             />
@@ -115,7 +138,7 @@ export default function Home() {
             placeholder="Digite o Comprimento..."
             setValue={setConductorLength}
             value={conductorLength}
-            minimum={0}
+            minimum={0.01}
             maximum={1000}
             step="0.01"
           />
@@ -125,7 +148,7 @@ export default function Home() {
             placeholder="Digite o Raio..."
             setValue={setConductorRadius}
             value={conductorRadius}
-            minimum={0}
+            minimum={0.001}
             maximum={1000}
             step="0.001"
           />
@@ -134,7 +157,7 @@ export default function Home() {
             placeholder="Digite o Número de Fios..."
             setValue={setNumberOfWires}
             value={numberOfWires}
-            minimum={0}
+            minimum={1}
             maximum={1000}
             step="1"
           />
@@ -146,7 +169,17 @@ export default function Home() {
           </button>
         </div>
       </form>
-      <MaterialParameteters selectedMaterialKey={selectedMaterialKey} />
+      <div className="flex flex-col gap-4 justify-between items-center">
+        <MaterialParameteters selectedMaterialKey={selectedMaterialKey} />
+        <CalculedParameters
+          skinEfect={skinEfect}
+          resistivityNewTemperature={resistivityNewTemperature}
+          currentType={currentTypeSelected}
+          Rca={Rca}
+          Rcc={Rcc}
+          temperature={temperature}
+        />
+      </div>
     </main>
   );
 }

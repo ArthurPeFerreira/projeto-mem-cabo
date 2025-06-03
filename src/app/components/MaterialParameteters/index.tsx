@@ -1,3 +1,6 @@
+"use client";
+
+import { formatScientific } from "@/lib/functions/formatScientific";
 import { conductiveMaterials } from "@/lib/materials/conductiveMaterials";
 
 interface MaterialParametetersProps {
@@ -21,15 +24,21 @@ export function MaterialParameteters({
             </div>
             <div>
               <strong>Permeabilidade Relativa (μᵣ):</strong>{" "}
-              {conductiveMaterials[selectedMaterialKey].relativePermeability}
+              {formatScientific(
+                conductiveMaterials[selectedMaterialKey].relativePermeability
+              )}
             </div>
             <div>
               <strong>Resistividade (ρ):</strong>{" "}
-              {conductiveMaterials[selectedMaterialKey].resistivity} Ω·m
+              {formatScientific(
+                conductiveMaterials[selectedMaterialKey].resistivity
+              )}{" "}
+              Ω·m
             </div>
             <div>
               <strong>Coeficiente de Temperatura a 20 °C (α₂₀):</strong>{" "}
-              {conductiveMaterials[selectedMaterialKey].alpha} °C⁻¹
+              {formatScientific(conductiveMaterials[selectedMaterialKey].alpha)}{" "}
+              °C⁻¹
             </div>
 
             <div>
