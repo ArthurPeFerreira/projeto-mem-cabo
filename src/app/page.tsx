@@ -1,103 +1,152 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import Input from "./components/Input";
+import MaterialSelector from "./components/MaterialSelection";
+import { conductiveMaterials } from "@/lib/materials/conductiveMaterials";
+import { MaterialParameteters } from "./components/MaterialParameteters";
+import { MU_0 } from "@/lib/constants";
+import Select from "react-select";
+import CurrentTypeSelector from "./components/CurrentTypeSelection";
+
+const currentOptions = [
+  { value: "AC", label: "Corrente Alternada (AC)" },
+  { value: "DC", label: "Corrente Contínua (DC)" },
+];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [selectedMaterialKey, setSelectedMaterialKey] = useState<string | null>(
+    null
+  );
+  const [frequency, setFrequency] = useState<number>(60);
+  const [temperature, setTemperature] = useState<number>(30);
+  const [conductorRadius, setConductorRadius] = useState<number>(1);
+  const [conductorLength, setConductorLength] = useState<number>(1);
+  const [numberOfWires, setNumberOfWires] = useState<number>(7);
+  const [currentType, setCurrentType] = useState<"AC" | "DC">("AC");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  function handleSubmit() {
+    if (!selectedMaterialKey) {
+      return;
+    }
+
+    const conductorArea = Math.PI * conductorRadius * conductorRadius;
+
+    const absoluteTemperature =
+      conductiveMaterials[selectedMaterialKey].absoluteTemperature;
+
+    const alpha = conductiveMaterials[selectedMaterialKey].alpha;
+
+    const relativePermeability =
+      conductiveMaterials[selectedMaterialKey].relativePermeability;
+
+    const resistivity20 = conductiveMaterials[selectedMaterialKey].resistivity;
+
+    const resistance20 = (resistivity20 * 1) / conductorArea;
+    const resistanceNewTemperature =
+      resistance20 * (1 + alpha * (temperature - 20));
+
+    const resistivityNewTemperature =
+      (resistanceNewTemperature * conductorArea) / conductorLength;
+
+    const skinDepth = Math.sqrt(
+      resistivityNewTemperature /
+        (Math.PI * frequency * MU_0 * relativePermeability)
+    );
+
+    let strandingFactor: number;
+
+    if (numberOfWires < 3) {
+      strandingFactor = 1.01;
+    } else {
+      strandingFactor = 1.02;
+    }
+
+    const Rca =
+      (resistanceNewTemperature * conductorLength * strandingFactor) /
+      (2 * Math.PI * conductorRadius * skinDepth * numberOfWires);
+  }
+
+  return (
+    <main className="flex flex-row gap-3 p-4 justify-center">
+      <form
+        className="bg-gray-800 w-fit h-fit p-2 rounded-md"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <h1 className="text-white text-3xl text-center mb-2 p-1">
+          Parâmetros de Entrada
+        </h1>
+
+        <div className="flex flex-col gap-2">
+          <CurrentTypeSelector
+            currentType={currentType}
+            setCurrentType={setCurrentType}
+          />
+          <MaterialSelector
+            selectedKey={selectedMaterialKey}
+            setSelectedKey={setSelectedMaterialKey}
+          />
+          {currentType === "AC" && (
+            <Input
+              title="Frequência (Hz):"
+              placeholder="Digite a Frequência..."
+              setValue={setFrequency}
+              value={frequency}
+              minimum={0}
+              maximum={1000}
+              step="1"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          )}
+
+          <Input
+            title="Temperatura (°C):"
+            placeholder="Digite a Temperatura..."
+            setValue={setTemperature}
+            value={temperature}
+            minimum={-1000}
+            maximum={1000}
+            step="0.1"
+          />
+          <Input
+            title="Comprimento (m):"
+            placeholder="Digite o Comprimento..."
+            setValue={setConductorLength}
+            value={conductorLength}
+            minimum={0}
+            maximum={1000}
+            step="0.01"
+          />
+
+          <Input
+            title="Raio (m):"
+            placeholder="Digite o Raio..."
+            setValue={setConductorRadius}
+            value={conductorRadius}
+            minimum={0}
+            maximum={1000}
+            step="0.001"
+          />
+          <Input
+            title="Número de Fios:"
+            placeholder="Digite o Número de Fios..."
+            setValue={setNumberOfWires}
+            value={numberOfWires}
+            minimum={0}
+            maximum={1000}
+            step="1"
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-200 ease-in-out cursor-pointer active:scale-95"
           >
-            Read our docs
-          </a>
+            Calcular
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </form>
+      <MaterialParameteters selectedMaterialKey={selectedMaterialKey} />
+    </main>
   );
 }
