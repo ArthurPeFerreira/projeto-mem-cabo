@@ -57,7 +57,7 @@ export default function MaterialSelector({
         className="w-full"
         options={options}
         onChange={(option) => setSelectedKey(option?.value ?? null)}
-        placeholder="Choose a material..."
+        placeholder="Selecione o material..."
       />
     </div>
   );
